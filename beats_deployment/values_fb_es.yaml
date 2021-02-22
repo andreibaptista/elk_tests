@@ -1,0 +1,54 @@
+---
+# Allows you to add any config files in /usr/share/filebeat
+# such as filebeat.yml
+filebeatConfig:
+  filebeat.yml: |
+    filebeat.inputs:
+    - type: container
+      paths:
+        - /var/log/containers/core-log*.log
+      processors:
+      - add_kubernetes_metadata:
+          host: ${NODE_NAME}
+          matchers:
+          - logs_path:
+              logs_path: "/var/log/containers/"
+
+    output.elasticsearch:
+      host: '${NODE_NAME}'
+      hosts: '${ELASTICSEARCH_HOSTS:elasticsearch-master:9200}'
+
+#    output.elasticsearch:
+#      host: '${NODE_NAME}'
+#      hosts: '${ELASTICSEARCH_HOSTS:elasticsearch-master:9200}'
+
+# Root directory where Filebeat will write data to in order to persist registry data across pod restarts (file position and other metadata).
+hostPathRoot: /var/lib
+hostNetworking: false
+image: "docker.elastic.co/beats/filebeat"
+imageTag: "7.8.0"
+imagePullPolicy: "IfNotPresent"
+
+# Whether this chart should self-manage its service account, role, and associated role binding.
+managedServiceAccount: true
+
+# Various pod security context settings. Bear in mind that many of these have an impact on Filebeat functioning properly.
+#
+# - User that the container will execute as. Typically necessary to run as root (0) in order to properly collect host container logs.
+# - Whether to execute the Filebeat containers as privileged containers. Typically not necessarily unless running within environments such as OpenShift.
+podSecurityContext:
+  runAsUser: 0
+  privileged: false
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "100Mi"
+  limits:
+    cpu: "200m"
+    memory: "200Mi"
+
+# How long to wait for Filebeat pods to stop gracefully
+terminationGracePeriod: 30
+
+updateStrategy: RollingUpdate

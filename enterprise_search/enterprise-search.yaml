@@ -1,0 +1,39 @@
+apiVersion: enterprisesearch.k8s.elastic.co/v1beta1
+kind: EnterpriseSearch
+metadata:
+  name: search
+  namespace: search
+spec:
+  version: 7.10.2
+  count: 1
+  elasticsearchRef:
+    name: search
+  config:
+    ent_search.external_url: http://search.test.com.br
+  http:
+    tls:
+      selfSignedCertificate:
+        disabled: true
+    service:
+      spec:
+        type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: search
+  namespace: search
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+  - host: search.test.com.br
+    http:
+      paths:
+      - path: /(.*)
+        backend:
+          serviceName: search-ent-http
+          servicePort: 3002

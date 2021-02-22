@@ -1,0 +1,20 @@
+elasticsearchHosts: "http://development-master:9200"
+
+replicas: 1
+
+image: "kibana"
+imageTag: "7.8.0"
+imagePullPolicy: "IfNotPresent"
+
+ingress:
+  enabled: true
+  annotations:
+      kubernetes.io/ingress.class: nginx
+  hosts:
+    - kibana.testdomain.com.br
+  tls: []
+
+
+service:
+  type: ClusterIP
+  port: 5601

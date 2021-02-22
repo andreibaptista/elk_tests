@@ -1,0 +1,39 @@
+apiVersion: kibana.k8s.elastic.co/v1
+kind: Kibana
+metadata:
+  name: kibana
+  namespace: search
+spec:
+  version: 7.10.2
+  count: 1
+  elasticsearchRef:
+    name: search
+  config:
+          enterpriseSearch.host: 'http://search-ent-http:3002'
+  http:
+    tls:
+      selfSignedCertificate:
+        disabled: true
+    service:
+      spec:
+        type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: kibana
+  namespace: search
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+  - host: kibana.test.com.br
+    http:
+      paths:
+      - path: /(.*)
+        backend:
+          serviceName: kibana-kb-http
+          servicePort: 5601

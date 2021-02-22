@@ -1,0 +1,71 @@
+replicas: 1
+
+# Allows you to add any config files in /usr/share/logstash/config/
+# such as logstash.yml and log4j2.properties
+#
+# Note that when overriding logstash.yml, `http.host: 0.0.0.0` should always be included
+# to make default probes work.
+logstashConfig: 
+  logstash.yml: |
+    http.host: 0.0.0.0
+    xpack.monitoring.enabled: true
+    xpack.monitoring.elasticsearch.hosts: [ "http://elk-eck-ingest:9200" ]
+#  log4j2.properties: |
+#    key = value
+
+# Allows you to add any pipeline files in /usr/share/logstash/pipeline/
+### ***warn*** there is a hardcoded logstash.conf in the image, override it first
+logstashPipeline:
+  logstash.conf: |
+    input {
+        azure_event_hubs {
+           event_hub_connections => ["Endpoint=sb://event-elk1.servicebus.windows.net/;SharedAccessKeyName=logstash;SharedAccessKey=XXXXXX;EntityPath=logstash"]
+           threads => 2
+           decorate_events => true
+           consumer_group => "logstash"
+           storage_connection => "DefaultEndpointsProtocol=https;AccountName=blobelkstack;AccountKey=XXXXXX;EndpointSuffix=core.windows.net"
+           storage_container => "logstash"
+        }
+    }
+    filter {
+        grok {
+            match => { "message" => "%{COMBINEDAPACHELOG}"}
+        }
+    }
+    output {
+        elasticsearch {
+            hosts => ["http://elk-eck-ingest:9200"]
+            index => "azureeventhub-%{+YYYY.MM.dd}"
+        }
+        stdout { 
+            codec => rubydebug 
+          }
+    }
+
+image: "logstash"
+imageTag: "7.8.0"
+imagePullPolicy: "IfNotPresent"
+
+service:
+  annotations: {}
+  type: ClusterIP
+  ports:
+    - name: beats
+      port: 5044
+      protocol: TCP
+      targetPort: 5044
+    - name: http
+      port: 9600
+      protocol: TCP
+      targetPort: 9600
+#    - name: fluentd
+#      port: 4000
+#      protocol: TCP
+#      targetPort: 4000
+
+httpPort: 9600
+
+# Custom ports to add to logstash
+extraPorts: []
+#   - name: fluentd
+#     containerPort: 4000

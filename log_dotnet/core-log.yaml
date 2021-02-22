@@ -1,0 +1,84 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: core-log
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: core-log
+  name: core-log
+  namespace: core-log
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: core-log
+  template:
+    metadata:
+      labels:
+        app: core-log
+    spec:
+      containers:
+      - image: cssonddos/core-log:1.0.2
+        name: core-log
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 200m
+            memory: 150Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+---
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: core-log
+  namespace: core-log
+spec:
+  maxReplicas: 2
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: core-log
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      targetAverageUtilization: 60
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: core-log
+  namespace: core-log
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: core-log
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+      kubernetes.io/ingress.class: nginx
+  name: core-log-ingress
+  namespace: core-log
+spec:
+  rules:
+  - http:
+      paths:
+      - backend:
+          serviceName: core-log
+          servicePort: 80

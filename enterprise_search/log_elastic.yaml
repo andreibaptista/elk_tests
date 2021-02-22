@@ -1,0 +1,54 @@
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: search
+  namespace: search
+spec:
+  version: 7.9.0
+  http:
+    service:
+      spec:
+        type: ClusterIP
+    tls:
+      selfSignedCertificate:
+        disabled: true
+  nodeSets:
+  - name: master
+    count: 1
+    config:
+      node.master: true
+      node.data: true
+      node.ingest: true
+      node.ml: false
+      node.store.allow_mmap: false
+    podTemplate:
+      spec:
+#        affinity:
+#          nodeAffinity:
+#            requiredDuringSchedulingIgnoredDuringExecution:
+#              nodeSelectorTerms:
+#              - matchExpressions:
+#                - key: role
+#                  operator: In
+#                  values: 
+#                  - <LABEL>
+#          podAntiAffinity:
+#            preferredDuringSchedulingIgnoredDuringExecution:
+#            - weight: 100
+#              podAffinityTerm:
+#                labelSelector:
+#                  matchLabels:
+#                    elasticsearch.k8s.elastic.co/cluster-name: <CLUSTER_NAME>
+#                topologyKey: kubernetes.io/hostname
+        containers:
+        - name: elasticsearch
+          env:
+          - name: ES_JAVA_OPTS
+            value: -Xms1g -Xmx1g
+          resources:
+            requests:
+              memory: 1Gi
+              cpu: "300m"
+            limits:
+              memory: 1Gi
+              cpu: "300m"
